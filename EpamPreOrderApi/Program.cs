@@ -29,13 +29,19 @@ using (var scope = app.Services.CreateScope())
     context.SeedData();
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors();
 app.MapControllers();
+
+app.MapGet("/", () => Results.Ok(new { message = "EpamPreOrderApi is running", status = "Healthy" }));
+app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }));
+
+var renderPort = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(renderPort))
+{
+    app.Urls.Add($"http://0.0.0.0:{renderPort}");
+}
 
 app.Run();

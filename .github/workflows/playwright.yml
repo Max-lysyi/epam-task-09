@@ -33,7 +33,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Setup .env Configuration
         run: |
@@ -59,22 +59,22 @@ jobs:
 
       - name: Start EpamPreOrderApi Backend
         run: |
-          dotnet run --project EpamPreOrderApi/EpamPreOrderApi.csproj --no-build -c Release --urls "${{ env.API_BASE_URL }}" &
+          dotnet run --project EpamPreOrderApi/EpamPreOrderApi.csproj --no-build -c Release --urls "${{ env.API_BASE_URL }}" > backend.log 2>&1 &
           echo $! > backend.pid
 
       - name: Start Frontend SPA Server
         run: |
-          node green-and-tasty/frontend/restaurant-frontend-app/scripts/serve-spa.mjs &
+          node green-and-tasty/frontend/restaurant-frontend-app/scripts/serve-spa.mjs > frontend.log 2>&1 &
           echo $! > frontend.pid
 
       - name: Wait for Services Health Check
         run: |
           echo "Waiting for Backend on ${{ env.API_BASE_URL }}..."
-          timeout 30 bash -c 'until curl -s ${{ env.API_BASE_URL }}/guest/groups/group1/status > /dev/null; do sleep 1; done'
+          timeout 30 bash -c 'until curl -s ${{ env.API_BASE_URL }}/health > /dev/null; do sleep 1; done' || (echo "Backend failed to start. Logs:" && cat backend.log && exit 1)
           echo "Backend is healthy!"
 
           echo "Waiting for Frontend on ${{ env.BASE_URL }}..."
-          timeout 30 bash -c 'until curl -s ${{ env.BASE_URL }} > /dev/null; do sleep 1; done'
+          timeout 30 bash -c 'until curl -s ${{ env.BASE_URL }} > /dev/null; do sleep 1; done' || (echo "Frontend failed to start. Logs:" && cat frontend.log && exit 1)
           echo "Frontend is healthy!"
 
       - name: Run Playwright SpecFlow Tests
@@ -101,9 +101,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-test-artifacts
+          if-no-files-found: ignore
           path: |
             aqa/restaurant-aqa-framework/TestResults/
             aqa/restaurant-aqa-framework/bin/Release/net10.0/TestResults/
+            *.log
           retention-days: 14
 
       - name: Stop Background Services

@@ -8,6 +8,7 @@ aqa/restaurant-aqa-framework/.env
 bin/
 obj/
 dist/
+!green-and-tasty/frontend/restaurant-frontend-app/dist/**
 TestResults/
 playwright-report/
 traces/

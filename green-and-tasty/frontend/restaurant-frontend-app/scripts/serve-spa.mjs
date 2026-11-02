@@ -43,11 +43,19 @@ const server = http.createServer((req, res) => {
 
   // SPA fallback to index.html
   const indexPath = path.join(distDir, 'index.html');
-  res.writeHead(200, {
-    'Content-Type': 'text/html',
-    'Access-Control-Allow-Origin': '*'
-  });
-  fs.createReadStream(indexPath).pipe(res);
+  if (fs.existsSync(indexPath)) {
+    res.writeHead(200, {
+      'Content-Type': 'text/html',
+      'Access-Control-Allow-Origin': '*'
+    });
+    let html = fs.readFileSync(indexPath, 'utf-8');
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5023';
+    html = html.replaceAll('https://example.com', backendUrl);
+    return res.end(html);
+  } else {
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    return res.end('Dist index.html not found');
+  }
 });
 
 server.listen(port, () => {

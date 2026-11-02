@@ -1,0 +1,5 @@
+bin/
+obj/
+.git/
+.local/
+.DS_Store
