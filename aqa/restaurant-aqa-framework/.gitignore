@@ -1,0 +1,26 @@
+# Environment variables
+.env
+*.env
+!.env.example
+
+# Build and test artifacts
+bin/
+obj/
+TestResults/
+playwright-report/
+allure-results/
+screenshots/
+videos/
+traces/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# OS files
+.DS_Store
+Thumbs.db
+

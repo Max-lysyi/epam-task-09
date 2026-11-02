@@ -1,0 +1,120 @@
+name: Playwright & SpecFlow End-to-End Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Run Direction 1 Group Pre-Order Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      BASE_URL: ${{ secrets.BASE_URL || 'http://localhost:4200' }}
+      API_BASE_URL: ${{ secrets.API_BASE_URL || 'http://localhost:5023' }}
+      HEADLESS: true
+      BROWSER: chromium
+      BACKEND_URL: ${{ secrets.API_BASE_URL || 'http://localhost:5023' }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup .env Configuration
+        run: |
+          cp aqa/restaurant-aqa-framework/.env.example aqa/restaurant-aqa-framework/.env
+          echo "BASE_URL=${{ env.BASE_URL }}" >> aqa/restaurant-aqa-framework/.env
+          echo "API_BASE_URL=${{ env.API_BASE_URL }}" >> aqa/restaurant-aqa-framework/.env
+          echo "HEADLESS=${{ env.HEADLESS }}" >> aqa/restaurant-aqa-framework/.env
+          echo "BROWSER=${{ env.BROWSER }}" >> aqa/restaurant-aqa-framework/.env
+
+      - name: Restore Dependencies
+        run: |
+          dotnet restore EpamPreOrderApi/EpamPreOrderApi.csproj
+          dotnet restore aqa/restaurant-aqa-framework/RestaurantAqaFramework.csproj
+
+      - name: Build Backend & Test Framework
+        run: |
+          dotnet build EpamPreOrderApi/EpamPreOrderApi.csproj --no-restore -c Release
+          dotnet build aqa/restaurant-aqa-framework/RestaurantAqaFramework.csproj --no-restore -c Release
+
+      - name: Install Playwright Browsers & Dependencies
+        run: |
+          pwsh aqa/restaurant-aqa-framework/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: Start EpamPreOrderApi Backend
+        run: |
+          dotnet run --project EpamPreOrderApi/EpamPreOrderApi.csproj --no-build -c Release --urls "${{ env.API_BASE_URL }}" &
+          echo $! > backend.pid
+
+      - name: Start Frontend SPA Server
+        run: |
+          node green-and-tasty/frontend/restaurant-frontend-app/scripts/serve-spa.mjs &
+          echo $! > frontend.pid
+
+      - name: Wait for Services Health Check
+        run: |
+          echo "Waiting for Backend on ${{ env.API_BASE_URL }}..."
+          timeout 30 bash -c 'until curl -s ${{ env.API_BASE_URL }}/guest/groups/group1/status > /dev/null; do sleep 1; done'
+          echo "Backend is healthy!"
+
+          echo "Waiting for Frontend on ${{ env.BASE_URL }}..."
+          timeout 30 bash -c 'until curl -s ${{ env.BASE_URL }} > /dev/null; do sleep 1; done'
+          echo "Frontend is healthy!"
+
+      - name: Run Playwright SpecFlow Tests
+        id: run_tests
+        continue-on-error: true
+        run: |
+          dotnet test aqa/restaurant-aqa-framework/RestaurantAqaFramework.csproj \
+            --no-build \
+            -c Release \
+            --logger "trx;LogFileName=test-results.trx" \
+            --logger "html;LogFileName=test-results.html" \
+            --results-directory aqa/restaurant-aqa-framework/TestResults
+
+      - name: Generate SpecFlow LivingDoc Report
+        if: always()
+        run: |
+          dotnet tool install --global SpecFlow.Plus.LivingDoc.CLI || true
+          livingdoc test-execution aqa/restaurant-aqa-framework/bin/Release/net10.0/RestaurantAqaFramework.dll \
+            -t aqa/restaurant-aqa-framework/bin/Release/net10.0/TestExecution.json \
+            --output aqa/restaurant-aqa-framework/TestResults/LivingDoc.html || true
+
+      - name: Upload Test Results & Failure Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-artifacts
+          path: |
+            aqa/restaurant-aqa-framework/TestResults/
+            aqa/restaurant-aqa-framework/bin/Release/net10.0/TestResults/
+          retention-days: 14
+
+      - name: Stop Background Services
+        if: always()
+        run: |
+          if [ -f backend.pid ]; then kill $(cat backend.pid) || true; fi
+          if [ -f frontend.pid ]; then kill $(cat frontend.pid) || true; fi
+
+      - name: Check Overall Test Status
+        if: steps.run_tests.outcome != 'success'
+        run: |
+          echo "One or more tests failed. Inspect the uploaded artifacts for traces and screenshots."
+          exit 1
+

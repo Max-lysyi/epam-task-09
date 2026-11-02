@@ -1,0 +1,29 @@
+# Environment files
+.env
+*.env
+!.env.example
+aqa/restaurant-aqa-framework/.env
+
+# Build outputs
+bin/
+obj/
+dist/
+TestResults/
+playwright-report/
+traces/
+screenshots/
+videos/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+
+bin/
+obj/
+node_modules/
+.playwright/
+.local/
+chrome/
+.env
