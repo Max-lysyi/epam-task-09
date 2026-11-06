@@ -34,8 +34,11 @@ const server = http.createServer((req, res) => {
     });
     if (ext === '.js' || ext === '.html') {
       let content = fs.readFileSync(filePath, 'utf-8');
-      const backendUrl = process.env.BACKEND_URL || 'http://localhost:5023';
-      content = content.replaceAll('https://example.com', backendUrl);
+      const backendUrl = (process.env.BACKEND_URL || 'http://localhost:5023').replace(/\/$/, '');
+      content = content
+        .replaceAll('https://epam-task-09.onrender.com', backendUrl)
+        .replaceAll('https://example.com', backendUrl)
+        .replaceAll('BACKEND_URL_PLACEHOLDER', backendUrl);
       return res.end(content);
     }
     return fs.createReadStream(filePath).pipe(res);
@@ -49,8 +52,11 @@ const server = http.createServer((req, res) => {
       'Access-Control-Allow-Origin': '*'
     });
     let html = fs.readFileSync(indexPath, 'utf-8');
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5023';
-    html = html.replaceAll('https://example.com', backendUrl);
+    const backendUrl = (process.env.BACKEND_URL || 'http://localhost:5023').replace(/\/$/, '');
+    html = html
+      .replaceAll('https://epam-task-09.onrender.com', backendUrl)
+      .replaceAll('https://example.com', backendUrl)
+      .replaceAll('BACKEND_URL_PLACEHOLDER', backendUrl);
     return res.end(html);
   } else {
     res.writeHead(404, { 'Content-Type': 'text/plain' });

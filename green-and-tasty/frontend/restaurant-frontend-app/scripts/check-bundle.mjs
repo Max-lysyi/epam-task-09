@@ -2,10 +2,11 @@
  * Fails the build if the produced bundle still contains configuration placeholders.
  * Runs automatically after `npm run build` (npm "postbuild" hook).
  */
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync, copyFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 const BUNDLE_DIR = resolve('dist/restaurant-frontend-app/browser');
+const ROOT_DIST = resolve('dist/restaurant-frontend-app');
 const FORBIDDEN = ['BACKEND_URL_PLACEHOLDER'];
 
 function walk(dir) {
@@ -30,6 +31,15 @@ for (const file of walk(BUNDLE_DIR).filter((f) => /\.(js|css|html)$/.test(f))) {
 if (failed) {
   console.error('\nBundle is not deployable: configuration placeholders were not substituted.');
   process.exit(1);
+}
+
+// Copy index.html to parent dist dir to ensure compatibility if publish dir is dist/restaurant-frontend-app
+try {
+  if (existsSync(join(BUNDLE_DIR, 'index.html'))) {
+    copyFileSync(join(BUNDLE_DIR, 'index.html'), join(ROOT_DIST, 'index.html'));
+  }
+} catch (e) {
+  // ignore
 }
 
 console.log('Bundle check passed: no configuration placeholders left.');

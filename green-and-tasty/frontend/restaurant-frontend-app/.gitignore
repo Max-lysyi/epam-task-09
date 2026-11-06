@@ -3,8 +3,7 @@
 # Compiled output
 /dist/*
 !/dist/restaurant-frontend-app/
-!/dist/restaurant-frontend-app/browser/
-!/dist/restaurant-frontend-app/browser/**
+!/dist/restaurant-frontend-app/**
 /tmp
 /out-tsc
 /bazel-out
