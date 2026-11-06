@@ -96,6 +96,28 @@ jobs:
             -t aqa/restaurant-aqa-framework/bin/Release/net10.0/TestExecution.json \
             --output aqa/restaurant-aqa-framework/TestResults/LivingDoc.html || true
 
+      - name: Sanitize Test Artifact File Names
+        if: always()
+        run: |
+          python3 -c '
+          import os
+          for root, dirs, files in os.walk("aqa/restaurant-aqa-framework", topdown=False):
+              for f in files:
+                  if any(c in f for c in [":", "<", ">", "\"", "|", "?", "*"]):
+                      clean = "".join("_" if c in ":<>\"|?*" else c for c in f)
+                      try:
+                          os.rename(os.path.join(root, f), os.path.join(root, clean))
+                      except Exception:
+                          pass
+              for d in dirs:
+                  if any(c in d for c in [":", "<", ">", "\"", "|", "?", "*"]):
+                      clean = "".join("_" if c in ":<>\"|?*" else c for c in d)
+                      try:
+                          os.rename(os.path.join(root, d), os.path.join(root, clean))
+                      except Exception:
+                          pass
+          ' || true
+
       - name: Upload Test Results & Failure Artifacts
         if: always()
         uses: actions/upload-artifact@v4

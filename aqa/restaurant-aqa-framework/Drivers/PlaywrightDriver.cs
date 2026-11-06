@@ -145,7 +145,10 @@ public class PlaywrightDriver : IAsyncDisposable
 
     private static string SanitizeFileName(string name)
     {
-        var invalidChars = Path.GetInvalidFileNameChars();
+        var invalidChars = new HashSet<char>(Path.GetInvalidFileNameChars())
+        {
+            ':', '<', '>', '"', '|', '?', '*', '/', '\\'
+        };
         return new string(name.Select(ch => invalidChars.Contains(ch) ? '_' : ch).ToArray()).Replace(' ', '_');
     }
 }
