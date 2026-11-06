@@ -74,6 +74,15 @@ export class LoginFormComponent {
         this.showPassword.update((v) => !v);
     }
 
+    loginAsDemo(): void {
+        this.auth.loginAsDemoOrganizer();
+        this.draftService.clear();
+        this.success.emit();
+        this.router.navigate(['/reservations/demo-reservation/group-order'], {
+            queryParams: { demo: '' },
+        });
+    }
+
     async onSubmit(): Promise<void> {
         // clear API state each submit
         this.unsuccessfulLogin.set(false);
@@ -103,7 +112,7 @@ export class LoginFormComponent {
             this.auth.user$.pipe(first((u) => !!u)).subscribe((user) => {
                 if (user.role === 'Waiter') this.router.navigate(['/waiter-reservations']);
                 else if (user.role === 'Admin') this.router.navigate(['/reports']);
-                else this.router.navigate(['/main']);
+                else this.router.navigate(['/reservations/demo-reservation/group-order'], { queryParams: { demo: '' } });
             });
         } finally {
             this.isLoading.set(false);

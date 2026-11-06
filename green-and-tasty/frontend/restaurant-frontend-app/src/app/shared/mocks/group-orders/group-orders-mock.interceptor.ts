@@ -9,7 +9,7 @@ import {
   GroupOrdersMockStore,
   MockHttpError,
 } from './group-orders.mock-store';
-import { isDemoAuthorization } from '../auth/demo-auth';
+import { DEMO_USER, isDemoAuthorization } from '../auth/demo-auth';
 
 const LATENCY_MS = 400;
 export const groupOrdersMockStore = new GroupOrdersMockStore();
@@ -59,6 +59,16 @@ export const groupOrdersMockInterceptor: HttpInterceptorFn = (req, next) => {
   if (req.method === 'DELETE' && path.includes(`${groupBase}/`)) {
     const guestSessionId = decodeURIComponent(path.slice(path.lastIndexOf('/') + 1));
     return respond(() => store.remove(guestSessionId));
+  }
+
+  // Демо-логін (?demo): повертаємо профіль демо-користувача
+  if (req.method === 'GET' && path.endsWith('/me') && isDemoAuthorization(req.headers.get('Authorization'))) {
+    return respond(() => DEMO_USER);
+  }
+
+  // Демо-логін (?demo): повертаємо ім'я користувача за id
+  if (req.method === 'GET' && path.includes('/users/') && isDemoAuthorization(req.headers.get('Authorization'))) {
+    return respond(() => ({ name: `${DEMO_USER.firstName} ${DEMO_USER.lastName}` }));
   }
 
   // Демо-логін (?demo): справжній API демо-токен не прийме, тож кошик у шапці показуємо порожнім.

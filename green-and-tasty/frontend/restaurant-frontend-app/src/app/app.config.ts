@@ -1,4 +1,4 @@
-import { ApplicationConfig, isDevMode, provideAppInitializer, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, provideAppInitializer, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
@@ -13,16 +13,16 @@ import { API_BASE_URL } from './shared/config/api-base-url.token';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    // DEV-ONLY: ?demo у будь-якій адресі — мок-логін як Owner демо-бронювання (домашка, рівні 1–2).
+    // ?demo у будь-якій адресі або demo-reservation — мок-логін як Owner демо-бронювання.
     provideAppInitializer(() => {
-      if (isDevMode()) applyDemoLoginFromUrl();
+      applyDemoLoginFromUrl();
     }),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideHttpClient(
       withXhr(),
-      // DEV-ONLY: мок групового pre-order для demo-reservation (домашка). У production не реєструється.
-      withInterceptors([tokenInterceptor, ...(isDevMode() ? [groupOrdersMockInterceptor] : [])]),
+      // Мок групового pre-order для demo-reservation (підтримується і в dev, і на продакшні для менторів).
+      withInterceptors([tokenInterceptor, groupOrdersMockInterceptor]),
     ),
     provideDaterangepickerLocale({
       separator: ' - ',

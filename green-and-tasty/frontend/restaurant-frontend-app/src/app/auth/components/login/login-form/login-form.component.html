@@ -68,6 +68,18 @@
         Sign In
     </app-custom-button>
 
+    <div class="demo-login-divider">
+        <span>or</span>
+    </div>
+
+    <button
+        type="button"
+        class="demo-login-btn"
+        (click)="loginAsDemo()"
+    >
+        Demo Login as Organizer
+    </button>
+
     <div class="bottom">
         <span>Don't have an account?</span>
         <a class="link" routerLink="/signup">Create an Account</a>
